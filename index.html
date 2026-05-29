@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Private Library</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            margin: 100px auto;
+        }
+        
+        .library-container {
+            display: none;
+            min-height: 100vh;
+        }
+        
+        .header-bar {
+            background: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 99;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+        
+        .category-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+            background: white;
+            border-bottom: 1px solid #eee;
+            flex-wrap: wrap;
+        }
+        
+        .tab-btn {
+            background: #f0f0f0;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .book-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+        
+        .book-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .book-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .book-cover-img {
+            width: 100px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .book-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .book-author {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        
+        .file-badge {
+            display: inline-block;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        .badge-epub { background: #e8f0fe; color: #2c5282; }
+        .badge-pdf { background: #fee2e2; color: #c0392b; }
+        .badge-txt { background: #e6fffa; color: #276749; }
+        
+        input {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        
+        .empty-message {
+            text-align: center;
+            grid-column: 1/-1;
+            padding: 50px;
+            color: #666;
+        }
+        
+        .viewer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .viewer-header {
+            padding: 15px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .close-viewer {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px 15px;
+        }
+        
+        .viewer-content {
+            flex: 1;
+            overflow: auto;
+            background: #f5f5f0;
+        }
+        
+        .viewer-footer {
+            padding: 15px;
+            text-align: center;
+            background: white;
+            border-top: 1px solid #ddd;
+        }
+        
+        .nav-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            margin: 0 10px;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+        
+        .txt-content {
+            padding: 30px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        @media (max-width: 600px) {
+            .book-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                padding: 15px;
+            }
+            .book-cover-img {
+                width: 80px;
+                height: 120px;
+            }
+            .tab-btn { padding: 8px 20px; font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container" id="login-container">
+    <h2>🔐 Private Library</h2>
+    <p style="color: #666; margin-bottom: 20px;">Only authorized users can access</p>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button class="login-btn" onclick="login()">Login</button>
+    <div id="login-error" class="error"></div>
+</div>
+
+<div class="library-container" id="library-container">
+    <div class="header-bar">
+        <h2>📚 Multi-language Library</h2>
+        <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+    </div>
+    
+    <div class="category-tabs">
+        <button class="tab-btn active" data-lang="all">🌍 All</button>
+        <button class="tab-btn" data-lang="ko">🇰🇷 Korean</button>
+        <button class="tab-btn" data-lang="en">🇺🇸 English</button>
+        <button class="tab-btn" data-lang="ja">🇯🇵 Japanese</button>
+    </div>
+    
+    <div class="book-grid" id="book-grid"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
+<script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    
+    // ===== Authorized Users =====
+    const allowedUsers = [
+        { username: "terry", password: "1234", name: "Terry" }
+    ];
+    
+    // ===== 📚 Book List =====
+    const books = [
+        // ===== 🇰🇷 Korean Books (TXT) =====
+        { 
+            id: 1,
+            title: "꺼삐딴리", 
+            file: "books/korean/꺼삐딴리.txt",
+            type: "txt",
+            cover: "images/korean/k1.png", 
+            author: "전관용",
+            lang: "ko"
+        },
+        { 
+            id: 2,
+            title: "B사감과러브레터", 
+            file: "books/korean/B사감과러브레터.txt",
+            type: "txt",
+            cover: "images/korean/k2.png", 
+            author: "현진건",
+            lang: "ko"
+        },
+        { 
+            id: 3,
+            title: "메밀꽃필무렵", 
+            file: "books/korean/메밀꽃필무렵.txt",
+            type: "txt",
+            cover: "images/korean/k3.png", 
+            author: "이효석",
+            lang: "ko"
+        },
+        
+        // ===== 🇺🇸 English Books (PDF) =====
+        { 
+            id: 4,
+            title: "Harry Potter and the Sorcerors Stone", 
+            file: "books/english/Harry_Potter_and_the_Sorcerors_Stone.pdf",
+            type: "pdf",
+            cover: "images/english/e1.png", 
+            author: "Rowling, J.K",
+            lang: "en"
+        },
+        { 
+            id: 5,
+            title: "Guns, Germs and Steel", 
+            file: "books/english/Guns_germs_and_steel.pdf",
+            type: "pdf",
+            cover: "images/english/e2.png", 
+            author: "Diamond, Jared",
+            lang: "en"
+        },
+        { 
+            id: 6,
+            title: "Treasury of Greek Mythology", 
+            file: "books/english/Treasury_of_Greek_Mythology.pdf",
+            type: "pdf",
+            cover: "images/english/e3.png", 
+            author: "Napoli, Donna Jo",
+            lang: "en"
+        },
+        
+        // ===== 🇯🇵 Japanese Books (PDF) =====
+        { 
+            id: 7,
+            title: "嘘と詐欺と異能学園", 
+            file: "books/japanese/嘘と詐欺と異能学園.pdf",
+            type: "pdf",
+            cover: "images/japanese/j1.png", 
+            author: "Nomiya Yuu",
+            lang: "ja"
+        },
+        { 
+            id: 8,
+            title: "厳しい女上司が高校生に戻ったら俺にデレデレする理由", 
+            file: "books/japanese/厳しい女上司が高校生に戻ったら俺にデレデレする理由.pdf",
+            type: "pdf",
+            cover: "images/japanese/j2.png", 
+            author: "Tokuyama Ginjiro",
+            lang: "ja"
+        },
+        { 
+            id: 9,
+            title: "塩対応の佐藤さんが俺にだけ甘い", 
+            file: "books/japanese/塩対応の佐藤さんが俺にだけ甘い.pdf",
+            type: "pdf",
+            cover: "images/japanese/j3.png", 
+            author: "Saruwatari Kazami",
+            lang: "ja"
+        },
+        { 
+            id: 10,
+            title: "尽くしたがりのうちの嫁について1", 
+            file: "books/japanese/尽くしたがりのうちの嫁について1.pdf",
+            type: "pdf",
+            cover: "images/japanese/j4.png", 
+            author: "Konno Nazume",
+            lang: "ja"
+        },
+        { 
+            id: 11,
+            title: "尽くしたがりのうちの嫁について2", 
+            file: "books/japanese/尽くしたがりのうちの嫁について2.pdf",
+            type: "pdf",
+            cover: "images/japanese/j5.png", 
+            author: "Konno Nazume",
+            lang: "ja"
+        }
+    ];
+    
+    let currentRendition = null;
+    let currentLang = "all";
+    let pdfDoc = null;
+    let currentPage = 1;
+    let totalPages = 0;
+    
+    function login() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        const user = allowedUsers.find(u => u.username === username && u.password === password);
+        
+        if (user) {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('library-container').style.display = 'block';
+            displayBooks();
+            setupTabs();
+            localStorage.setItem('loggedIn', 'true');
+            localStorage.setItem('username', username);
+        } else {
+            document.getElementById('login-error').innerText = 'Incorrect username or password.';
+        }
+    }
+    
+    function logout() {
+        localStorage.removeItem('loggedIn');
+        localStorage.removeItem('username');
+        document.getElementById('login-container').style.display = 'block';
+        document.getElementById('library-container').style.display = 'none';
+        document.getElementById('username').value = '';
+        document.getElementById('password').value = '';
+        closeViewer();
+    }
+    
+    function closeViewer() {
+        if (currentRendition) {
+            currentRendition.destroy();
+            currentRendition = null;
+        }
+        pdfDoc = null;
+        const viewer = document.getElementById('viewer-overlay');
+        if (viewer) viewer.remove();
+    }
+    
+    function setupTabs() {
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(tab => {
+            tab.onclick = () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentLang = tab.dataset.lang;
+                displayBooks();
+            };
+        });
+    }
+    
+    function displayBooks() {
+        const grid = document.getElementById('book-grid');
+        grid.innerHTML = '';
+        
+        let filtered = currentLang === "all" ? books : books.filter(b => b.lang === currentLang);
+        
+        if (filtered.length === 0) {
+            grid.innerHTML = '<div class="empty-message">📭 No books registered.</div>';
+            return;
+        }
+        
+        filtered.forEach(book => {
+            const card = document.createElement('div');
+            card.className = 'book-card';
+            card.onclick = () => openBook(book);
+            
+            let badgeClass = book.type === 'epub' ? 'badge-epub' : (book.type === 'pdf' ? 'badge-pdf' : 'badge-txt');
+            let badgeText = book.type.toUpperCase();
+            
+            card.innerHTML = `
+                <img class="book-cover-img" src="${book.cover}" alt="${book.title}" 
+                     onerror="this.src='https://via.placeholder.com/100x150?text=No+Image'">
+                <div class="book-title">${book.title}</div>
+                <div class="book-author">${book.author}</div>
+                <span class="file-badge ${badgeClass}">${badgeText}</span>
+            `;
+            grid.appendChild(card);
+        });
+    }
+    
+    function openBook(book) {
+        closeViewer();
+        const overlay = document.createElement('div');
+        overlay.id = 'viewer-overlay';
+        overlay.className = 'viewer-overlay';
+        
+        if (book.type === 'epub') openEpub(book, overlay);
+        else if (book.type === 'pdf') openPdf(book, overlay);
+        else if (book.type === 'txt') openTxt(book, overlay);
+    }
+    
+    function openEpub(book, overlay) {
+        overlay.innerHTML = `
+            <div class="viewer-header">
+                <span>📖 ${book.title}</span>
+                <button class="close-viewer" id="close-viewer">✖ Close</button>
+            </div>
+            <div id="epub-viewer" class="viewer-content"></div>
+            <div class="viewer-footer">
+                <button class="nav-btn" id="prev-page">◀ Previous</button>
+                <button class="nav-btn" id="next-page">Next ▶</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        
+        try {
+            const bookUrl = encodeURI(book.file);
+            currentRendition = ePub(bookUrl);
+            currentRendition.renderTo("epub-viewer", { width: "100%", height: "100%" });
+            currentRendition.display();
+            
+            document.getElementById('prev-page').onclick = () => currentRendition?.prev();
+            document.getElementById('next-page').onclick = () => currentRendition?.next();
+        } catch(e) {
+            document.getElementById('epub-viewer').innerHTML = `<div style="padding:20px; color:red;">Cannot open EPUB file: ${e.message}</div>`;
+        }
+        document.getElementById('close-viewer').onclick = closeViewer;
+    }
+    
+    function openPdf(book, overlay) {
+        overlay.innerHTML = `
+            <div class="viewer-header">
+                <span>📕 ${book.title}</span>
+                <button class="close-viewer" id="close-viewer">✖ Close</button>
+            </div>
+            <div class="viewer-content" style="display: flex; flex-direction: column; align-items: center; overflow: auto;">
+                <canvas id="pdf-canvas" style="max-width: 100%; height: auto;"></canvas>
+            </div>
+            <div class="viewer-footer">
+                <button class="nav-btn" id="prev-page">◀ Previous</button>
+                <span id="page-info">1 / 1</span>
+                <button class="nav-btn" id="next-page">Next ▶</button>
+                <button class="nav-btn" id="zoom-out" style="background: #666;">🔍-</button>
+                <button class="nav-btn" id="zoom-in" style="background: #666;">🔍+</button>
+                <button class="nav-btn" id="zoom-fit" style="background: #666;">📐 Fit</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        
+        let currentScale = 1.0;
+        let pdfPage = null;
+        
+        pdfjsLib.getDocument(book.file).promise.then(pdf => {
+            pdfDoc = pdf;
+            totalPages = pdf.numPages;
+            currentPage = 1;
+            document.getElementById('page-info').innerText = `1 / ${totalPages}`;
+            renderPage(1, currentScale);
+        }).catch(err => {
+            document.getElementById('pdf-canvas').innerHTML = `<div style="padding:20px; color:red;">PDF Error: ${err.message}</div>`;
+        });
+        
+        const renderPage = (num, scale) => {
+            pdfDoc.getPage(num).then(page => {
+                pdfPage = page;
+                const viewport = page.getViewport({ scale: scale });
+                const canvas = document.getElementById('pdf-canvas');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport });
+                document.getElementById('page-info').innerText = `${num} / ${totalPages}`;
+            });
+        };
+        
+        document.getElementById('prev-page').onclick = () => {
+            if (pdfDoc && currentPage > 1) { currentPage--; renderPage(currentPage, currentScale); }
+        };
+        document.getElementById('next-page').onclick = () => {
+            if (pdfDoc && currentPage < totalPages) { currentPage++; renderPage(currentPage, currentScale); }
+        };
+        document.getElementById('zoom-in').onclick = () => {
+            currentScale = Math.min(currentScale + 0.2, 3.0);
+            renderPage(currentPage, currentScale);
+        };
+        document.getElementById('zoom-out').onclick = () => {
+            currentScale = Math.max(currentScale - 0.2, 0.5);
+            renderPage(currentPage, currentScale);
+        };
+        document.getElementById('zoom-fit').onclick = () => {
+            const canvas = document.getElementById('pdf-canvas');
+            const container = canvas.parentElement;
+            const containerWidth = container.clientWidth - 40;
+            const viewport = pdfPage.getViewport({ scale: 1 });
+            currentScale = containerWidth / viewport.width;
+            renderPage(currentPage, currentScale);
+        };
+        document.getElementById('close-viewer').onclick = closeViewer;
+    }
+    
+    function openTxt(book, overlay) {
+        overlay.innerHTML = `
+            <div class="viewer-header">
+                <span>📄 ${book.title}</span>
+                <button class="close-viewer" id="close-viewer">✖ Close</button>
+            </div>
+            <div class="viewer-content">
+                <div class="txt-content" id="txt-text">Loading...</div>
+            </div>
+            <div class="viewer-footer">
+                <span style="font-size: 12px;">TXT file — scroll to read</span>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        
+        fetch(book.file)
+            .then(res => res.text())
+            .then(text => document.getElementById('txt-text').innerHTML = text.replace(/\n/g, '<br>'))
+            .catch(() => document.getElementById('txt-text').innerHTML = 'Unable to load file.');
+        
+        document.getElementById('close-viewer').onclick = closeViewer;
+    }
+    
+    if (localStorage.getItem('loggedIn') === 'true') {
+        const username = localStorage.getItem('username');
+        if (allowedUsers.find(u => u.username === username)) {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('library-container').style.display = 'block';
+            displayBooks();
+            setupTabs();
+        }
+    }
+</script>
+
+</body>
+</html>
